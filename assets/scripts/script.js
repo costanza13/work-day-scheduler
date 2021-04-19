@@ -1,9 +1,11 @@
 // initialize some globals
-const workdayFirstHour = 9;  // hour of day, 0 - 23
+const workdayFirstHour = 0;  // hour of day, 0 - 23
 const workdayLastHour = 17;  // hour of day, 0 - 23
-const today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
+var today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
 var now = dayjs();
-var workdayScheduleData = {};  // 
+var currentHour = parseInt(dayjs().format('H'));
+var workdayScheduleData = {};
+var heartbeat;
 
 const ord = function() {
   var ordinal = 'th';
@@ -22,37 +24,119 @@ const ord = function() {
 
 var loadScheduleData = function () {
   // load workday schedule from local storage
-  var workdayScheduleJson = localStorage.getItem('schedule');
+  var scheduleJson = localStorage.getItem('schedule');
+  var scheduleData;
 
-  if (workdayScheduleJson) {
-    workdayScheduleData = JSON.parse(workdayScheduleJson);
+  if (scheduleJson) {
+    scheduleData = JSON.parse(scheduleJson);
 
     // check if this is an old schedule
-    if (workdayScheduleData.date !== today) {
-      workdayScheduleData = null;  // if so, clear it out
+    if (scheduleData.date !== today) {
+      scheduleData = null;  // if so, clear it out
     }
   }
 
-  if (workdayScheduleJson === null) {
-    workdayScheduleData = {
+  if (scheduleJson === null) {
+    scheduleData = {
       date: today,
       schedule: []
     }
     // create empty schedule
-    for (var hour = 0; hour <= workdayLastHour; hour++) {
+    for (var hour = workdayFirstHour; hour <= workdayLastHour; hour++) {
       timeBLock = {
         hour: hour,
         tasks: []
       };
-      workdayScheduleData.schedule.push(timeBLock);
+      scheduleData.schedule.push(timeBLock);
     }
+    // and store it
+    localStorage.setItem('schedule', JSON.stringify(scheduleData));
   }
-  console.log(workdayScheduleData);
+  return scheduleData;
 }
+
+var buildScheduleEl = function(scheduleData) {
+  $('#schedule').hide();  // build it hidden
+
+  var currentHour = parseInt(dayjs().format('H'));
+  console.log(scheduleData);
+  for (var i = 0; i < scheduleData.schedule.length; i++) {
+    var timeBlock = scheduleData.schedule[i];
+    console.log('timeBlock', timeBlock);
+
+    var descBgClass = 'present';
+    if (timeBlock.hour > currentHour) {
+      descBgClass = 'future';
+    } else if (timeBlock.hour < currentHour) {
+      descBgClass = 'past'
+    }
+
+    var hourEl = $('<div>').attr('class', 'col-1 text-right hour');
+    var descriptionEl = $('<div>').attr('class', 'col-10 text-left description ' + descBgClass);
+    var saveEl = $('<div>').attr('class', 'col-1 text-center saveBtn');
+    hourEl.html(timeBlock.hour > 12 ? (timeBlock.hour - 12) + 'PM' : timeBlock.hour + 'AM');
+    descriptionEl.html('tasks?');
+    saveEl.html('<i class="far fa-save"></i>');
+    var timeBlockEl = $('<div>').attr('class', 'row time-block').attr('data-hour', timeBlock.hour);
+    timeBlockEl.append(hourEl).append(descriptionEl).append(saveEl);
+    $('#schedule').append(timeBlockEl);
+  }
+
+  $('#schedule').fadeIn(1000); // show it when done building
+}
+
+// update timeblocks' past/present/future status
+var refreshScheduleStatuses = function() {
+  var hourNow = parseInt(dayjs().format('H'));
+
+  // only if the hour has changed
+  if (hourNow !== currentHour) {
+
+    // at midnight, refresh everything
+    if (dayjs().startOf('day').format() !== today) {
+      clearInterval(heartbeat);
+      today = dayjs().startOf('day').format();
+      initSchedule();
+
+    } else {
+      var timeBlocks = $('.time-block');
+      timeBlocks.each(function(block) {
+        var description = block.children('.description').first();
+        var blockHour = parseInt(block.attr('data-hour'));
+
+        if (description.hasClass('present')) {
+          // probably have to change to 'past', so make sure
+          if (blockHour < hourNow) {
+            // yup, change to 'past'
+            description.removeClass('present');
+            description.addClass('past');
+          }
+        } else if (description.hasClass('future')) {
+          // might have to change to 'present', so check
+          if (blockHour === hourNow) {
+            // yup, change to 'present'
+            description.removeClass('future');
+            description.addClass('present');
+          } else if (blockHour < hourNow) {
+            // shouldn't happen, but cover it anyway
+            description.removeClass('future');
+            description.addClass('past');
+          }
+        }
+      });
+    }
+
+    currentHour = hourNow;
+  }
+};
+
 
 var initSchedule = function() {
   $('#currentDay').html(dayjs(today).format('dddd, MMMM D') + ord());
-  loadScheduleData();
+  workdayScheduleData = loadScheduleData();
+  buildScheduleEl(workdayScheduleData);
+
+  heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
 }
 
 
