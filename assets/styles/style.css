@@ -52,11 +52,13 @@ textarea{
 .present {
   background-color: #ff6961;
   color: white;
+  cursor: text;
 }
 
 .future {
   background-color: #77dd77;
   color: white;
+  cursor: text;
 }
 
 .saveBtn {
@@ -70,7 +72,11 @@ textarea{
   color: white;
 }
 
-.saveBtn i:hover {
+.saveBtn.active {
+  cursor: pointer;
+}
+
+.saveBtn.active:hover {
   font-size: 20px;
   transition: all .3s ease-in-out;
 }

@@ -1,11 +1,10 @@
 // initialize some globals
 const workdayFirstHour = 0;  // hour of day, 0 - 23
-const workdayLastHour = 17;  // hour of day, 0 - 23
+const workdayLastHour = 23;  // hour of day, 0 - 23
 var today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
 var now = dayjs();
 var currentHour = parseInt(dayjs().format('H'));
 var workdayScheduleData = {};
-var heartbeat;
 
 const ord = function() {
   var ordinal = 'th';
@@ -45,7 +44,7 @@ var loadScheduleData = function () {
     for (var hour = workdayFirstHour; hour <= workdayLastHour; hour++) {
       timeBLock = {
         hour: hour,
-        tasks: []
+        description: 'to-dos here'
       };
       scheduleData.schedule.push(timeBLock);
     }
@@ -62,7 +61,7 @@ var buildScheduleEl = function(scheduleData) {
   console.log(scheduleData);
   for (var i = 0; i < scheduleData.schedule.length; i++) {
     var timeBlock = scheduleData.schedule[i];
-    console.log('timeBlock', timeBlock);
+    // console.log('timeBlock', timeBlock);
 
     var descBgClass = 'present';
     if (timeBlock.hour > currentHour) {
@@ -75,12 +74,15 @@ var buildScheduleEl = function(scheduleData) {
     var descriptionEl = $('<div>').attr('class', 'col-10 text-left description ' + descBgClass);
     var saveEl = $('<div>').attr('class', 'col-1 text-center saveBtn');
     hourEl.html(timeBlock.hour > 12 ? (timeBlock.hour - 12) + 'PM' : timeBlock.hour + 'AM');
-    descriptionEl.html('tasks?');
+    descriptionEl.html(timeBlock.description);
     saveEl.html('<i class="far fa-save"></i>');
     var timeBlockEl = $('<div>').attr('class', 'row time-block').attr('data-hour', timeBlock.hour);
     timeBlockEl.append(hourEl).append(descriptionEl).append(saveEl);
     $('#schedule').append(timeBlockEl);
   }
+
+  // add editable description handler
+  $('.present, .future').on('click', editDescription);
 
   $('#schedule').fadeIn(1000); // show it when done building
 }
@@ -100,9 +102,9 @@ var refreshScheduleStatuses = function() {
 
     } else {
       var timeBlocks = $('.time-block');
-      timeBlocks.each(function(block) {
-        var description = block.children('.description').first();
-        var blockHour = parseInt(block.attr('data-hour'));
+      timeBlocks.each(function() {
+        var description = $(this).children('.description').first();
+        var blockHour = parseInt($(this).attr('data-hour'));
 
         if (description.hasClass('present')) {
           // probably have to change to 'past', so make sure
@@ -130,14 +132,28 @@ var refreshScheduleStatuses = function() {
   }
 };
 
+var editDescription = function() {
+  console.log('description element:', $(this).html());
+  $(this).siblings('.saveBtn').addClass('active');
+  
+  // add save button handler
+  $('.active').on('click', saveDescription).css('cursor: pointer');
+};
+
+var saveDescription = function() {
+  console.log('save button element', $(this).html());
+  $(this).off('click');
+  $(this).removeClass('active').css('cursor: default');
+};
 
 var initSchedule = function() {
   $('#currentDay').html(dayjs(today).format('dddd, MMMM D') + ord());
   workdayScheduleData = loadScheduleData();
   buildScheduleEl(workdayScheduleData);
-
-  heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
 }
 
 
 initSchedule();
+
+
+var heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
