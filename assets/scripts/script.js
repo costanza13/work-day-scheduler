@@ -58,7 +58,6 @@ var buildScheduleEl = function(scheduleData) {
   $('#schedule').hide();  // build it hidden
 
   var currentHour = parseInt(dayjs().format('H'));
-  console.log(scheduleData);
   for (var i = 0; i < scheduleData.schedule.length; i++) {
     var timeBlock = scheduleData.schedule[i];
     // console.log('timeBlock', timeBlock);
@@ -75,6 +74,7 @@ var buildScheduleEl = function(scheduleData) {
   }
 
   refreshScheduleStatuses();
+  $('.present, .future').on('click', editDescription);
   $('#schedule').fadeIn(1000); // show it when done building
 }
 
@@ -128,27 +128,24 @@ var refreshScheduleStatuses = function() {
   currentHour = hourNow;
 
   // add editable description handler
-  $('.description').off('click');
-  $('.present, .future').on('click', editDescription);
+  $('.description.past').off('click');
 };
 
 var editDescription = function() {
+  var description = $(this).html();
   $(this).addClass('active');
   $(this).siblings('.saveBtn').addClass('active');
   $(this).off('click');
 
-  var description = $(this).html();
-  console.log('description:', description);
   var descriptionTextarea = $('<textarea class="edit-description">').val(description);
   $(this).html(descriptionTextarea);
   $('.edit-description').trigger('focus');
   
   // add save button handler
-  $('.saveBtn.active').on('click', saveDescription).css('cursor: pointer');
+  $(this).siblings('.saveBtn.active').first().on('click', saveDescription).css('cursor: pointer');
 };
 
 var saveDescription = function() {
-  console.log('save button element', $(this).html());
   $(this).off('click');
   $(this).removeClass('active').css('cursor: default');
 
@@ -158,19 +155,18 @@ var saveDescription = function() {
   var editDescriptionEl = descriptionEl.children('.edit-description').first();
   var newDescription = editDescriptionEl.val();
   descriptionEl.html(newDescription);
-  descriptionEl.removeClass('active');
-  console.log('changing hour', hour);
-  console.log('changing to "' + newDescription + '"');
 
   for (var i = 0; i < workdayScheduleData.schedule.length; i++) {
     if (workdayScheduleData.schedule[i].hour === hour) {
-      console.log(workdayScheduleData.schedule[i].description);
       workdayScheduleData.schedule[i].description = newDescription;
-      console.log(workdayScheduleData.schedule[i].description);
       break;
     }
   }
   localStorage.setItem('schedule', JSON.stringify(workdayScheduleData));
+
+  descriptionEl.removeClass('active');
+  descriptionEl.on('click', editDescription);
+
   refreshScheduleStatuses();
 };
 

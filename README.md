@@ -1,24 +1,15 @@
 # Work Day Scheduler
-A simple calendar application that allows a user to save events for each hour of the day. This app will runs in the browser and features dynamically updated HTML and CSS powered by jQuery.
+A simple calendar application that allows a user to save events for each hour of the day. The user can view the hourly schedule for the current work day, and add events to the hours ahead.
 
-## User Story
-AS AN employee with a busy schedule
-I WANT to add important events to a daily planner
-SO THAT I can manage my time effectively
-
-## Acceptance Criteria
-- WHEN I open the planner
-  THEN the current day is displayed at the top of the calendar
-- WHEN I scroll down
-  THEN I am presented with time blocks for standard business hours
-- WHEN I view the time blocks for that day
-  THEN each time block is color-coded to indicate whether it is in the past, present, or future
-- WHEN I click into a time block
-  THEN I can enter an event
-- WHEN I click the save button for that time block
-  THEN the text for that event is saved in local storage
-- WHEN I refresh the page
-  THEN the saved events persist
+## Features
+- Upon starting the app, the current date is displayed at the top of the calendar.
+- Scrolling down reveals a daily planner with time blocks for standard business hours (hours configurable in the JavaScript).
+- Each time block is color-coded to indicate whether it is in the past (gray), present (red), or future (green.)
+- Past/present/future status is updated throughout the day as each hour passes.
+- Clicking the description field of a time block allows the user to add or edit events.
+- Clicking the save button for the associated time block saves the event in both the view and in local storage.
+- Saved events persist when refreshing the page.
+- A change in the calendar day (when the hour passes midnight), results in the user being presented with a new, empty schedule.
 
 ## Screenshot 
-<img src="./assets/images/work-day-scheduler.gif" />
+<img src="./assets/images/scheduler-demo.gif" />
