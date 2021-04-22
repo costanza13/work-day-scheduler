@@ -91,7 +91,6 @@ var refreshScheduleStatuses = function() {
 
   // at midnight, refresh everything
   if (dayjs().startOf('day').format() !== today) {
-    clearInterval(heartbeat);
     today = dayjs().startOf('day').format();
     initSchedule();
 
