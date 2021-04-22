@@ -275,5 +275,5 @@ var initSchedule = function() {
 // get things started
 initSchedule();
 
-  // used to check for hour transitions and update past/present/future statuses
-  var heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
+// used to check for hour transitions and update past/present/future statuses
+var heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
