@@ -1,6 +1,6 @@
 // declare/initialize some globals
 const workdayFirstHourDefault = 9;  // hour of day, 0 - 23
-const workdayLastHourDefault = 5;  // hour of day, 0 - 23
+const workdayLastHourDefault = 17;  // hour of day, 0 - 23
 var today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
 var currentHour = parseInt(dayjs().format('H'));
 var workdayScheduleData = {};
