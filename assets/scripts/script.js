@@ -8,15 +8,20 @@ var workdayScheduleData = {};
 
 const ord = function() {
   var ordinal = 'th';
-  switch (dayjs().format('D')) {
-    case '1':
-      ordinal = 'st';
-      break;
-    case '2':
-      ordinal = 'nd';
-      break;
-    case '3':
-      ordinal = 'rd';
+  var dayOfMonth = parseInt(dayjs().format('D'));
+  // teens all keep "th", everything else needs logic
+  if (dayOfMonth < 4 || dayOfMonth > 20) {
+    var dayOfMonthOnes = dayOfMonth % 10;
+    switch (dayOfMonthOnes) {
+      case 1:
+        ordinal = 'st';
+        break;
+      case 2:
+        ordinal = 'nd';
+        break;
+      case 3:
+        ordinal = 'rd';
+    }
   }
   return ordinal;
 }
