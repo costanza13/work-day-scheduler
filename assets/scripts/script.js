@@ -1,48 +1,39 @@
-// initialize some globals
-const workdayFirstHourDefault = 8;  // hour of day, 0 - 23
-const workdayLastHourDefault = 18;  // hour of day, 0 - 23
+// declare/initialize some globals
+const workdayFirstHourDefault = 9;  // hour of day, 0 - 23
+const workdayLastHourDefault = 5;  // hour of day, 0 - 23
 var today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
 var now = dayjs();
 var currentHour = parseInt(dayjs().format('H'));
 var workdayScheduleData = {};
+var heartbeat;
 
+// return date ending 'st', 'nd', 'rd', or 'th' based on day number
 const ord = function() {
   var ordinal = 'th';
-  switch (dayjs().format('D')) {
-    case '1':
-      ordinal = 'st';
-      break;
-    case '2':
-      ordinal = 'nd';
-      break;
-    case '3':
-      ordinal = 'rd';
+  var dayOfMonth = parseInt(dayjs().format('D'));
+  // teens all keep "th", everything else needs logic
+  if (dayOfMonth < 4 || dayOfMonth > 20) {
+    var dayOfMonthOnes = dayOfMonth % 10;
+    switch (dayOfMonthOnes) {
+      case 1:
+        ordinal = 'st';
+        break;
+      case 2:
+        ordinal = 'nd';
+        break;
+      case 3:
+        ordinal = 'rd';
+    }
   }
   return ordinal;
 }
 
+// build schedule object and load data from local storage
 var loadScheduleData = function () {
-
-  // start with an empty 24-hour schedule
-  var scheduleData = {
-    date: today,
-    firstHour: workdayFirstHourDefault,
-    lastHour: workdayLastHourDefault,
-    schedule: []
-  }
-  // create empty schedule
-  for (var hour = 0; hour < 24; hour++) {
-    scheduleData.schedule.push(
-      {
-        hour: hour,
-        description: ''
-      }
-    );
-  }
+  var scheduleData = null;
 
   // load workday schedule from local storage
   var scheduleJson = localStorage.getItem('schedule');
-
   if (scheduleJson) {
     var loadedScheduleData = JSON.parse(scheduleJson);
 
@@ -51,8 +42,19 @@ var loadScheduleData = function () {
       scheduleData = loadedScheduleData;
     }
   }
-
-  localStorage.setItem('schedule', JSON.stringify(scheduleData));
+  if (!scheduleData) {
+    // start with an empty 24-hour schedule
+    scheduleData = {
+      date: today,
+      firstHour: workdayFirstHourDefault,
+      lastHour: workdayLastHourDefault,
+      schedule: []
+    }
+    for (var hour = 0; hour < 24; hour++) {
+      scheduleData.schedule.push({hour: hour, description: ''});
+    }
+    localStorage.setItem('schedule', JSON.stringify(scheduleData));
+  }
 
   return scheduleData;
 }
@@ -62,7 +64,9 @@ var createTimeBlockEl = function(hour, description) {
 
   if (hour > -1 && hour < 24) {
     var hourEl = $('<div>').attr('class', 'col-1 text-right hour');
-    hourEl.html(hour > 12 ? (hour - 12) + 'PM' : hour + 'AM');
+    var amPm = hour > 11 ? 'PM' : 'AM';
+    var timeText = (hour > 12 ? (hour - 12) : (hour === 0 ? 12 : hour)) + amPm;
+    hourEl.html(timeText);
 
     var descriptionEl = $('<div>').attr('class', 'col-10 text-left description past');
     descriptionEl.html(description);
@@ -85,7 +89,7 @@ var buildScheduleEl = function(scheduleData) {
   $('#schedule').hide();  // build it hidden
 
   var currentHour = parseInt(dayjs().format('H'));
-  for (var i = 0; i < scheduleData.schedule.length; i++) {
+  for (var i = 0; i < 24; i++) {
     var timeBlock = scheduleData.schedule[i];
     var timeBlockEl = createTimeBlockEl(timeBlock.hour, timeBlock.description);
     if (timeBlockEl) {
@@ -244,12 +248,8 @@ var saveDescription = function() {
   var newDescription = editDescriptionEl.val();
   descriptionEl.html(newDescription);
 
-  for (var i = 0; i < workdayScheduleData.schedule.length; i++) {
-    if (workdayScheduleData.schedule[i].hour === hour) {
-      workdayScheduleData.schedule[i].description = newDescription;
-      break;
-    }
-  }
+  workdayScheduleData.schedule[hour].description = newDescription;
+
   localStorage.setItem('schedule', JSON.stringify(workdayScheduleData));
 
   descriptionEl.removeClass('active');
@@ -264,18 +264,19 @@ var initSchedule = function() {
   buildScheduleEl(workdayScheduleData);
 
   $('.hour-control').click(function() {
-    var where = ($(this).parent().attr('id') === 'start-hour-controls') ? 'start' : 'end'
+    console.log($(this).parent());
+    var where = ($(this).parent().attr('id') === 'start-hour-controls') ? 'start' : 'end';
     if ($(this).attr('data-op') === 'add') {
       addHour(where);
     } else {
       removeHour(where);
     }
   }).css('cursor', 'pointer');
+
+  // used to check for hour transitions and update past/present/future statuses
+  heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
 }
 
 
 // get things started
 initSchedule();
-
-// check for hour transitions and update past/present/future statuses
-var heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
