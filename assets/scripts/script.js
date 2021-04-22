@@ -2,10 +2,8 @@
 const workdayFirstHourDefault = 9;  // hour of day, 0 - 23
 const workdayLastHourDefault = 5;  // hour of day, 0 - 23
 var today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
-var now = dayjs();
 var currentHour = parseInt(dayjs().format('H'));
 var workdayScheduleData = {};
-var heartbeat;
 
 // return date ending 'st', 'nd', 'rd', or 'th' based on day number
 const ord = function() {
@@ -176,7 +174,6 @@ var refreshScheduleStatuses = function() {
 
   // at midnight, refresh everything
   if (dayjs().startOf('day').format() !== today) {
-    clearInterval(heartbeat);
     today = dayjs().startOf('day').format();
     initSchedule();
 
@@ -272,11 +269,11 @@ var initSchedule = function() {
       removeHour(where);
     }
   }).css('cursor', 'pointer');
-
-  // used to check for hour transitions and update past/present/future statuses
-  heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
 }
 
 
 // get things started
 initSchedule();
+
+  // used to check for hour transitions and update past/present/future statuses
+  var heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
