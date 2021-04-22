@@ -1,6 +1,6 @@
 // initialize some globals
-const workdayFirstHour = 8;  // hour of day, 0 - 23
-const workdayLastHour = 18;  // hour of day, 0 - 23
+const workdayFirstHourDefault = 8;  // hour of day, 0 - 23
+const workdayLastHourDefault = 18;  // hour of day, 0 - 23
 var today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
 var now = dayjs();
 var currentHour = parseInt(dayjs().format('H'));
@@ -22,37 +22,64 @@ const ord = function() {
 }
 
 var loadScheduleData = function () {
-  // load workday schedule from local storage
-  var scheduleJson = localStorage.getItem('schedule');
-  var scheduleData = null;
 
-  if (scheduleJson) {
-    scheduleData = JSON.parse(scheduleJson);
-
-    // check if this is an old schedule
-    if (scheduleData.date !== today) {
-      scheduleData = null;  // if so, clear it out
-    }
+  // start with an empty 24-hour schedule
+  var scheduleData = {
+    date: today,
+    firstHour: workdayFirstHourDefault,
+    lastHour: workdayLastHourDefault,
+    schedule: []
   }
-
-  if (scheduleData === null) {
-    scheduleData = {
-      date: today,
-      schedule: []
-    }
-    // create empty schedule
-    for (var hour = workdayFirstHour; hour <= workdayLastHour; hour++) {
-      timeBLock = {
+  // create empty schedule
+  for (var hour = 0; hour < 24; hour++) {
+    scheduleData.schedule.push(
+      {
         hour: hour,
         description: ''
-      };
-      scheduleData.schedule.push(timeBLock);
-    }
-    // and store it
-    localStorage.setItem('schedule', JSON.stringify(scheduleData));
+      }
+    );
   }
+
+  // load workday schedule from local storage
+  var scheduleJson = localStorage.getItem('schedule');
+
+  if (scheduleJson) {
+    var loadedScheduleData = JSON.parse(scheduleJson);
+
+    // check if this is a current schedule
+    if (loadedScheduleData.date === today) {
+      scheduleData = loadedScheduleData;
+    }
+  }
+
+  localStorage.setItem('schedule', JSON.stringify(scheduleData));
+
   return scheduleData;
 }
+
+var createTimeBlockEl = function(hour, description) {
+  var timeBlockEl = null;
+
+  if (hour > -1 && hour < 24) {
+    var hourEl = $('<div>').attr('class', 'col-1 text-right hour');
+    hourEl.html(hour > 12 ? (hour - 12) + 'PM' : hour + 'AM');
+
+    var descriptionEl = $('<div>').attr('class', 'col-10 text-left description past');
+    descriptionEl.html(description);
+
+    var saveEl = $('<div>').attr('class', 'col-1 text-center saveBtn');
+    saveEl.html('<i class="far fa-save"></i>');
+    
+    timeBlockEl = $('<div>').attr('class', 'row time-block').attr('data-hour', hour);
+    // if the current time block is not within the work hours set by the user
+    if (hour < workdayScheduleData.firstHour || hour > workdayScheduleData.lastHour) {
+      // hide it
+      timeBlockEl.hide();
+    }
+    timeBlockEl.append(hourEl).append(descriptionEl).append(saveEl);
+  }
+  return timeBlockEl;
+};
 
 var buildScheduleEl = function(scheduleData) {
   $('#schedule').hide();  // build it hidden
@@ -60,22 +87,83 @@ var buildScheduleEl = function(scheduleData) {
   var currentHour = parseInt(dayjs().format('H'));
   for (var i = 0; i < scheduleData.schedule.length; i++) {
     var timeBlock = scheduleData.schedule[i];
-    // console.log('timeBlock', timeBlock);
-
-    var hourEl = $('<div>').attr('class', 'col-1 text-right hour');
-    var descriptionEl = $('<div>').attr('class', 'col-10 text-left description past');
-    var saveEl = $('<div>').attr('class', 'col-1 text-center saveBtn');
-    hourEl.html(timeBlock.hour > 12 ? (timeBlock.hour - 12) + 'PM' : timeBlock.hour + 'AM');
-    descriptionEl.html(timeBlock.description);
-    saveEl.html('<i class="far fa-save"></i>');
-    var timeBlockEl = $('<div>').attr('class', 'row time-block').attr('data-hour', timeBlock.hour);
-    timeBlockEl.append(hourEl).append(descriptionEl).append(saveEl);
-    $('#schedule').append(timeBlockEl);
+    var timeBlockEl = createTimeBlockEl(timeBlock.hour, timeBlock.description);
+    if (timeBlockEl) {
+      timeBlockEl.insertBefore('#bottom-control-bar');
+    }
   }
 
   refreshScheduleStatuses();
   $('.present, .future').on('click', editDescription);
   $('#schedule').fadeIn(1000); // show it when done building
+}
+
+var addHour = function(where) {
+  var showHour = -1;
+
+  // adding an hour to the start of the schedule
+  if (where === 'start') {
+    // get the current first hour
+    var currentFirst = workdayScheduleData.firstHour;
+    if (workdayScheduleData.firstHour > 0) {
+      workdayScheduleData.firstHour--; 
+      showHour = workdayScheduleData.firstHour;
+      localStorage.setItem('schedule', JSON.stringify(workdayScheduleData));
+    }
+
+  // adding an hour to the end of the schedule
+  } else if (where === 'end') {
+    // get the current last hour
+    var currentLast = workdayScheduleData.lastHour;
+    if (workdayScheduleData.lastHour < 23) {
+      workdayScheduleData.lastHour++;
+      showHour = workdayScheduleData.lastHour;
+      localStorage.setItem('schedule', JSON.stringify(workdayScheduleData));
+    }
+  }
+
+  if (showHour > -1) {
+    // find time block element for the new first hour
+    $('.time-block').each(function() {
+      if (parseInt($(this).attr('data-hour')) === showHour) {
+        $(this).show();
+        if (where === 'end') {
+          $('html, body').animate({scrollTop:$(document).height()}, 'slow');
+        }
+      }
+    });
+  }
+}
+
+var removeHour = function(where) {
+  var hideHour = -1;
+
+  // only do this if there are at least 2 time blocks
+  if (workdayScheduleData.firstHour < workdayScheduleData.lastHour) {
+    // removing an hour from the start of the schedule
+    if (where === 'start') {
+      // get the current first hour
+      hideHour = workdayScheduleData.firstHour;
+      workdayScheduleData.firstHour++;
+      localStorage.setItem('schedule', JSON.stringify(workdayScheduleData));
+
+    // adding an hour to the end of the schedule
+    } else if (where === 'end') {
+      // get the current last hour
+      hideHour = workdayScheduleData.lastHour;
+      workdayScheduleData.lastHour--;
+      localStorage.setItem('schedule', JSON.stringify(workdayScheduleData));
+    }
+
+    if (hideHour > -1) {
+      // find time block element for the new first hour
+      $('.time-block').each(function() {
+        if (parseInt($(this).attr('data-hour')) === hideHour) {
+          $(this).hide();
+        }
+      });
+    }
+  }
 }
 
 // update timeblocks' past/present/future status
@@ -174,6 +262,15 @@ var initSchedule = function() {
   $('#currentDay').html(dayjs(today).format('dddd, MMMM D') + ord());
   workdayScheduleData = loadScheduleData();
   buildScheduleEl(workdayScheduleData);
+
+  $('.hour-control').click(function() {
+    var where = ($(this).parent().attr('id') === 'start-hour-controls') ? 'start' : 'end'
+    if ($(this).attr('data-op') === 'add') {
+      addHour(where);
+    } else {
+      removeHour(where);
+    }
+  }).css('cursor', 'pointer');
 }
 
 

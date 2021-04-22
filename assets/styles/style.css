@@ -4,6 +4,10 @@ body {
   line-height: 1;
 }
 
+.hidden {
+  display: none;
+}
+
 textarea {
   background: transparent;
   border: none;
@@ -90,4 +94,13 @@ textarea {
 .saveBtn.active:hover {
   font-size: 20px;
   transition: all .3s ease-in-out;
+}
+
+.control-bar {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.hour-control {
+  margin: 5px;
 }
