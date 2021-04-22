@@ -2,7 +2,6 @@
 const workdayFirstHour = 8;  // hour of day, 0 - 23
 const workdayLastHour = 18;  // hour of day, 0 - 23
 var today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
-var now = dayjs();
 var currentHour = parseInt(dayjs().format('H'));
 var workdayScheduleData = {};
 
@@ -89,46 +88,49 @@ var buildScheduleEl = function(scheduleData) {
 var refreshScheduleStatuses = function() {
   var hourNow = parseInt(dayjs().format('H'));
 
-  // at midnight, refresh everything
-  if (dayjs().startOf('day').format() !== today) {
-    today = dayjs().startOf('day').format();
-    initSchedule();
+  // only refresh if the time block for the current hour is not already set to 'present' status
+  if (!$('.time-block').eq(hourNow).children('.description').first().hasClass('present')) {
+    // at midnight, refresh everything
+    if (dayjs().startOf('day').format() !== today) {
+      today = dayjs().startOf('day').format();
+      initSchedule();
 
-  } else {
-    var timeBlocks = $('.time-block');
-    timeBlocks.each(function() {
-      var description = $(this).children('.description').first();
-      var blockHour = parseInt($(this).attr('data-hour'));
+    } else {
+      var timeBlocks = $('.time-block');
+      timeBlocks.each(function() {
+        var description = $(this).children('.description').first();
+        var blockHour = parseInt($(this).attr('data-hour'));
 
-      if (description.hasClass('present')) {
-        // probably have to change to 'past', so make sure
-        if (blockHour < hourNow) {
-          // yup, change to 'past'
-          description.removeClass('present');
-          description.addClass('past');
+        if (description.hasClass('present')) {
+          // probably have to change to 'past', so make sure
+          if (blockHour < hourNow) {
+            // yup, change to 'past'
+            description.removeClass('present');
+            description.addClass('past');
+          }
+        } else if (description.hasClass('future')) {
+          // might have to change to 'present', so check
+          if (blockHour === hourNow) {
+            // yup, change to 'present'
+            description.removeClass('future');
+            description.addClass('present');
+          } else if (blockHour < hourNow) {
+            // shouldn't happen, but cover it anyway
+            description.removeClass('future');
+            description.addClass('past');
+          }
+        } else {
+          // might have to change from 'past', so check
+          if (blockHour === hourNow) {
+            description.removeClass('past');
+            description.addClass('present');
+          } else if (blockHour > hourNow) {
+            description.removeClass('past');
+            description.addClass('future');
+          }
         }
-      } else if (description.hasClass('future')) {
-        // might have to change to 'present', so check
-        if (blockHour === hourNow) {
-          // yup, change to 'present'
-          description.removeClass('future');
-          description.addClass('present');
-        } else if (blockHour < hourNow) {
-          // shouldn't happen, but cover it anyway
-          description.removeClass('future');
-          description.addClass('past');
-        }
-      } else {
-        // might have to change from 'past', so check
-        if (blockHour === hourNow) {
-          description.removeClass('past');
-          description.addClass('present');
-        } else if (blockHour > hourNow) {
-          description.removeClass('past');
-          description.addClass('future');
-        }
-      }
-    });
+      });
+    }
   }
 
   currentHour = hourNow;
