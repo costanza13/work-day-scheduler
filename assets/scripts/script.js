@@ -70,7 +70,9 @@ var buildScheduleEl = function(scheduleData) {
     var hourEl = $('<div>').attr('class', 'col-1 text-right hour');
     var descriptionEl = $('<div>').attr('class', 'col-10 text-left description past');
     var saveEl = $('<div>').attr('class', 'col-1 text-center saveBtn');
-    hourEl.html(timeBlock.hour > 12 ? (timeBlock.hour - 12) + 'PM' : timeBlock.hour + 'AM');
+    var amPm = timeBlock.hour > 11 ? 'PM' : 'AM';
+    var timeText = (timeBlock.hour > 12 ? (timeBlock.hour - 12) : (timeBlock.hour === 0 ? 12 : timeBlock.hour)) + amPm;
+    hourEl.html(timeText);
     descriptionEl.html(timeBlock.description);
     saveEl.html('<i class="far fa-save"></i>');
     var timeBlockEl = $('<div>').attr('class', 'row time-block').attr('data-hour', timeBlock.hour);
