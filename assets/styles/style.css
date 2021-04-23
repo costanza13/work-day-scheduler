@@ -101,6 +101,6 @@ textarea {
   white-space: nowrap;
 }
 
-.hour-control {
-  margin: 5px;
+.hour-control, .clear-control {
+  margin: 4px 2px;
 }

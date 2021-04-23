@@ -4,6 +4,7 @@ const workdayLastHourDefault = 17;  // hour of day, 0 - 23
 var today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
 var currentHour = parseInt(dayjs().format('H'));
 var workdayScheduleData = {};
+var editingHour = -1;
 
 // return date ending 'st', 'nd', 'rd', or 'th' based on day number
 const ord = function() {
@@ -94,6 +95,7 @@ var createTimeBlockEl = function(hour, description) {
 
 var buildScheduleEl = function(scheduleData) {
   $('#schedule').hide();  // build it hidden
+  $('.time-block').remove();
 
   var currentHour = parseInt(dayjs().format('H'));
   for (var i = 0; i < 24; i++) {
@@ -232,14 +234,18 @@ var refreshScheduleStatuses = function() {
 };
 
 var editDescription = function() {
-  // cancel other edits
-  $('.description.active').each(function() {
-    var hour = parseInt($(this).parent().attr('data-hour'));
-    cancelEdit(hour);
+  editingHour = parseInt($(this).parent().attr('data-hour'));
+  console.log('editingHour', editingHour);
+
+  $('.time-block.active').each(function() {
+    var thisHour = parseInt($(this).attr('data-hour'));
+    console.log(thisHour)
+    cancelEdit(thisHour);
   });
 
   var description = $(this).html();
   $(this).addClass('active');
+  $(this).parent().addClass('active');
   $(this).siblings('.saveBtn').addClass('active');
   $(this).off('click');
 
@@ -270,6 +276,8 @@ var saveDescription = function() {
   descriptionEl.removeClass('active');
   descriptionEl.on('click', editDescription);
 
+  editingHour = -1;
+
   refreshScheduleStatuses();
 };
 
@@ -280,33 +288,48 @@ var cancelEdit = function(hour) {
   resetTimeBlock.insertBefore(timeBlock);
   timeBlock.remove();
   refreshScheduleStatuses();
-  console.log(hour, resetTimeBlock, timeBlock);
 }
-
-var endEdit = function() {
-  console.log($(this).attr('data-hour') + ' lost focus');
-};
 
 var initSchedule = function() {
   $('#currentDay').html(dayjs(today).format('dddd, MMMM D') + ord());
   workdayScheduleData = loadScheduleData();
   buildScheduleEl(workdayScheduleData);
-
-  $('.hour-control').click(function() {
-    console.log($(this).parent());
-    var where = ($(this).parent().attr('id') === 'start-hour-controls') ? 'start' : 'end';
-    if ($(this).attr('data-op') === 'add') {
-      addHour(where);
-    } else {
-      removeHour(where);
-    }
-  }).css('cursor', 'pointer');
 }
 
+$('.hour-control').click(function() {
+  var where = ($(this).parent().attr('id') === 'start-hour-controls') ? 'start' : 'end';
+  if ($(this).attr('data-op') === 'add') {
+    addHour(where);
+  } else {
+    removeHour(where);
+  }
+}).css('cursor', 'pointer');
 
-// get things started
-initSchedule();
+$('.clear-control').click(function() {
+  localStorage.setItem('schedule', '');
+  initSchedule();
+}).css('cursor', 'pointer');
+
+$('body').on('click', function(event) {
+  var el = $(event.target).closest('.time-block');
+  $('.time-block.active').each(function() {
+    var thisHour = parseInt($(this).attr('data-hour'));
+    console.log(thisHour)
+    if (!el.length) {
+      cancelEdit(thisHour);
+      console.log('canceling hour', thisHour);
+    } else {
+      var clickedHour = parseInt(el.attr('data-hour'));
+      if (thisHour !== clickedHour) {
+        cancelEdit(thisHour);
+        console.log('canceling hour', thisHour, editingHour);
+      }
+    }
+  });
+});
 
 // used to check for hour transitions and update past/present/future statuses
 var heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
 
+// get things started
+initSchedule();
