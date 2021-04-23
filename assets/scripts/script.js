@@ -85,6 +85,7 @@ var createTimeBlockEl = function(hour, description) {
 
 var buildScheduleEl = function(scheduleData) {
   $('#schedule').hide();  // build it hidden
+  $('.time-block').remove();
 
   var currentHour = parseInt(dayjs().format('H'));
   for (var i = 0; i < 24; i++) {
@@ -262,21 +263,24 @@ var initSchedule = function() {
   $('#currentDay').html(dayjs(today).format('dddd, MMMM D') + ord());
   workdayScheduleData = loadScheduleData();
   buildScheduleEl(workdayScheduleData);
-
-  $('.hour-control').click(function() {
-    console.log($(this).parent());
-    var where = ($(this).parent().attr('id') === 'start-hour-controls') ? 'start' : 'end';
-    if ($(this).attr('data-op') === 'add') {
-      addHour(where);
-    } else {
-      removeHour(where);
-    }
-  }).css('cursor', 'pointer');
 }
 
+$('.hour-control').click(function() {
+  var where = ($(this).parent().attr('id') === 'start-hour-controls') ? 'start' : 'end';
+  if ($(this).attr('data-op') === 'add') {
+    addHour(where);
+  } else {
+    removeHour(where);
+  }
+}).css('cursor', 'pointer');
 
-// get things started
-initSchedule();
+$('.clear-control').click(function() {
+  localStorage.setItem('schedule', '');
+  initSchedule();
+}).css('cursor', 'pointer');
 
 // used to check for hour transitions and update past/present/future statuses
 var heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
+
+// get things started
+initSchedule();
