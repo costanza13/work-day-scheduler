@@ -4,7 +4,6 @@ const workdayLastHourDefault = 17;  // hour of day, 0 - 23
 var today = dayjs().startOf('day').format();  // date/timestamp for today at 00:00
 var currentHour = parseInt(dayjs().format('H'));
 var workdayScheduleData = {};
-var editingHour = -1;
 
 // return date ending 'st', 'nd', 'rd', or 'th' based on day number
 const ord = function() {
@@ -234,8 +233,6 @@ var refreshScheduleStatuses = function() {
 };
 
 var editDescription = function() {
-  editingHour = parseInt($(this).parent().attr('data-hour'));
-  console.log('editingHour', editingHour);
 
   $('.time-block.active').each(function() {
     var thisHour = parseInt($(this).attr('data-hour'));
@@ -275,8 +272,6 @@ var saveDescription = function() {
 
   descriptionEl.removeClass('active');
   descriptionEl.on('click', editDescription);
-
-  editingHour = -1;
 
   refreshScheduleStatuses();
 };
@@ -322,7 +317,6 @@ $('body').on('click', function(event) {
       var clickedHour = parseInt(el.attr('data-hour'));
       if (thisHour !== clickedHour) {
         cancelEdit(thisHour);
-        console.log('canceling hour', thisHour, editingHour);
       }
     }
   });
