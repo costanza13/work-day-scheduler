@@ -66,7 +66,16 @@ var createTimeBlockEl = function(hour, description) {
     var timeText = (hour > 12 ? (hour - 12) : (hour === 0 ? 12 : hour)) + amPm;
     hourEl.html(timeText);
 
-    var descriptionEl = $('<div>').attr('class', 'col-10 text-left description past');
+    var descriptionEl = $('<div>').attr('class', 'col-10 text-left description');
+    var timeClass = 'past';
+    if (hour > currentHour) {
+      timeClass = 'future';
+      descriptionEl.on('click', editDescription);
+    } else if (hour === currentHour) {
+      timeClass = 'present';
+      descriptionEl.on('click', editDescription);
+    }
+    descriptionEl.addClass(timeClass);
     descriptionEl.html(description);
 
     var saveEl = $('<div>').attr('class', 'col-1 text-center saveBtn');
@@ -96,7 +105,6 @@ var buildScheduleEl = function(scheduleData) {
   }
 
   refreshScheduleStatuses();
-  $('.present, .future').on('click', editDescription);
   $('#schedule').fadeIn(1000); // show it when done building
 }
 
@@ -224,14 +232,21 @@ var refreshScheduleStatuses = function() {
 };
 
 var editDescription = function() {
+  // cancel other edits
+  $('.description.active').each(function() {
+    var hour = parseInt($(this).parent().attr('data-hour'));
+    cancelEdit(hour);
+  });
+
   var description = $(this).html();
   $(this).addClass('active');
   $(this).siblings('.saveBtn').addClass('active');
   $(this).off('click');
 
-  var descriptionTextarea = $('<textarea class="edit-description">').val(description);
+  var descriptionTextarea = $('<textarea>').addClass('edit-description').val(description);
   $(this).html(descriptionTextarea);
-  $('.edit-description').trigger('focus');
+
+  descriptionTextarea.trigger('focus');
   
   // add save button handler
   $(this).siblings('.saveBtn.active').first().on('click', saveDescription).css('cursor: pointer');
@@ -258,6 +273,20 @@ var saveDescription = function() {
   refreshScheduleStatuses();
 };
 
+var cancelEdit = function(hour) {
+  var description = workdayScheduleData.schedule[hour].description;
+  var timeBlock = $('.time-block').eq(hour);
+  var resetTimeBlock = createTimeBlockEl(hour, description);
+  resetTimeBlock.insertBefore(timeBlock);
+  timeBlock.remove();
+  refreshScheduleStatuses();
+  console.log(hour, resetTimeBlock, timeBlock);
+}
+
+var endEdit = function() {
+  console.log($(this).attr('data-hour') + ' lost focus');
+};
+
 var initSchedule = function() {
   $('#currentDay').html(dayjs(today).format('dddd, MMMM D') + ord());
   workdayScheduleData = loadScheduleData();
@@ -280,3 +309,4 @@ initSchedule();
 
 // used to check for hour transitions and update past/present/future statuses
 var heartbeat = setInterval(refreshScheduleStatuses, 1000 * 60);
+
